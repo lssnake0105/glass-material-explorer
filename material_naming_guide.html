@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Zemax 材料库命名解读</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17202a;
+      --muted: #5b6470;
+      --line: #d7dde5;
+      --paper: #fbfcfe;
+      --band: #eef4f8;
+      --blue: #185e89;
+      --green: #246b57;
+      --amber: #875c16;
+      --red: #8a2f2f;
+      --thead: #e4edf3;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+      line-height: 1.65;
+    }
+    header {
+      background: #12384f;
+      color: white;
+      padding: 44px clamp(20px, 6vw, 72px) 38px;
+    }
+    header h1 {
+      margin: 0 0 12px;
+      font-size: clamp(30px, 4vw, 48px);
+      letter-spacing: 0;
+      line-height: 1.15;
+      font-weight: 740;
+    }
+    header p {
+      margin: 0;
+      max-width: 920px;
+      color: #d9e7ef;
+      font-size: 17px;
+    }
+    main {
+      display: grid;
+      grid-template-columns: minmax(190px, 260px) minmax(0, 1fr);
+      gap: clamp(22px, 4vw, 48px);
+      padding: 28px clamp(20px, 6vw, 72px) 56px;
+    }
+    nav {
+      position: sticky;
+      top: 18px;
+      align-self: start;
+      border-left: 3px solid var(--blue);
+      padding-left: 16px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    nav a {
+      display: block;
+      color: var(--blue);
+      text-decoration: none;
+      margin: 7px 0;
+    }
+    section {
+      padding: 26px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    h2 {
+      margin: 0 0 14px;
+      font-size: 25px;
+      letter-spacing: 0;
+      line-height: 1.25;
+    }
+    h3 {
+      margin: 22px 0 8px;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+    p { margin: 8px 0 13px; }
+    code {
+      background: #eaf0f4;
+      border: 1px solid #d4dce3;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-family: Consolas, "SFMono-Regular", monospace;
+      font-size: 0.94em;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 22px;
+      font-size: 14px;
+      background: white;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 9px 10px;
+      vertical-align: top;
+    }
+    th {
+      background: var(--thead);
+      text-align: left;
+      font-weight: 700;
+    }
+    .note {
+      background: var(--band);
+      border-left: 4px solid var(--blue);
+      padding: 12px 14px;
+      margin: 14px 0;
+    }
+    .status {
+      display: inline-block;
+      min-width: 58px;
+      text-align: center;
+      padding: 1px 7px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      color: white;
+    }
+    .ok { background: var(--green); }
+    .infer { background: var(--amber); }
+    .unknown { background: var(--red); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin: 16px 0 20px;
+    }
+    .metric {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 13px 14px;
+    }
+    .metric strong {
+      display: block;
+      font-size: 24px;
+      color: var(--blue);
+      line-height: 1.2;
+    }
+    .metric span { color: var(--muted); font-size: 13px; }
+    ul { padding-left: 22px; }
+    li { margin: 5px 0; }
+    a { color: var(--blue); }
+    @media (max-width: 860px) {
+      main { grid-template-columns: 1fr; }
+      nav { position: static; }
+      .grid { grid-template-columns: 1fr; }
+      table { font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Zemax 材料库命名解读</h1>
+    <p>基于本项目的 CDGM、NHG、PLASTIC 三个 TXT 材料库，整理材料名前缀、后缀、材料族、典型光学特性以及微型长焦镜头选材时的使用建议。</p>
+  </header>
+
+  <main>
+    <nav aria-label="页面目录">
+      <strong>目录</strong>
+      <a href="#overview">库文件概览</a>
+      <a href="#grammar">命名结构</a>
+      <a href="#prefix">前缀</a>
+      <a href="#family">材料族</a>
+      <a href="#suffix">后缀</a>
+      <a href="#plastic">塑料材料</a>
+      <a href="#telephoto">微型长焦选材</a>
+      <a href="#uncertain">不确定命名</a>
+      <a href="#sources">参考来源</a>
+    </nav>
+
+    <div>
+      <section id="overview">
+        <h2>库文件概览</h2>
+        <p>本页把材料名视为“玻璃/塑料牌号”，不是 Zemax 中的镜片编号。解析对象来自项目目录中的三个 TXT 文件，已能解析出 897 条材料记录。</p>
+        <div class="grid">
+          <div class="metric"><strong>340</strong><span>CDGM-ZEMAX202409.txt 可解析材料</span></div>
+          <div class="metric"><strong>531</strong><span>NHG202501.txt 可解析材料</span></div>
+          <div class="metric"><strong>26</strong><span>PLASTIC2020.txt 可解析材料</span></div>
+        </div>
+        <table>
+          <thead><tr><th>库</th><th>范围</th><th>备注</th></tr></thead>
+          <tbody>
+            <tr><td>CDGM</td><td>常规光学玻璃、D 系列模压玻璃、HWS 红外材料</td><td>材料族覆盖 FK/K/ZK/LAK/ZF/ZLAF 等，适合玻璃微型镜头初选。</td></tr>
+            <tr><td>NHG</td><td>常规光学玻璃、低 Tg 材料、IRG 红外玻璃</td><td>库中存在 <code>H-</code>、<code>D-</code>、<code>S-</code>、<code>L-</code> 等多套别名或系列。</td></tr>
+            <tr><td>PLASTIC</td><td>APEL、OKP、Iupizeta EP、ZEONEX 等塑料光学材料</td><td>适合非球面注塑镜片，但热稳定性与吸湿风险要单独验证。</td></tr>
+          </tbody>
+        </table>
+        <div class="note">库中 <code>IRG</code>、<code>HWS</code> 类红外材料的 <code>Nd/Vd</code> 字段并不按可见光普通玻璃理解，本页主要围绕可见光摄影镜头材料命名。</div>
+      </section>
+
+      <section id="grammar">
+        <h2>命名结构</h2>
+        <p>本项目中常见的玻璃名可粗略拆成下面的结构：</p>
+        <p><code>[系列前缀]-[材料族][序号][变体/性能后缀][-退火或折射率标记][@厂商/市场标记][*]</code></p>
+        <table>
+          <thead><tr><th>例子</th><th>拆解</th><th>读法</th></tr></thead>
+          <tbody>
+            <tr><td><code>H-K9L</code></td><td><code>H-</code> + <code>K</code> + <code>9</code> + <code>L</code></td><td>环保冠牌玻璃，K9 的低/微调变体，是常见 BK7 近似替代材料。</td></tr>
+            <tr><td><code>D-K9GT-25</code></td><td><code>D-</code> + <code>K</code> + <code>9</code> + <code>GT</code> + <code>-25</code></td><td>低软化点模压冠牌玻璃，高透过版本，折射率按 -25 ℃/h 退火速率给出。</td></tr>
+            <tr><td><code>H-ZF72AGT</code></td><td><code>H-</code> + <code>ZF</code> + <code>72</code> + <code>A</code> + <code>GT</code></td><td>环保重火石玻璃，配方 A 改型，高透过版本。</td></tr>
+            <tr><td><code>L-FK95@MY</code></td><td><code>L-</code> + <code>FK</code> + <code>95</code> + <code>@MY</code></td><td>NHG 库中的特殊标记版本，<code>@MY</code> 含义未在公开命名规则中确认。</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="prefix">
+        <h2>前缀解读</h2>
+        <table>
+          <thead><tr><th>前缀</th><th>可信度</th><th>含义</th><th>本库出现情况</th><th>选材影响</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>H-</code></td>
+              <td><span class="status ok">确认</span></td>
+              <td>环保光学玻璃，通常表示不含铅、砷、镉和放射性元素。行业命名资料把它解释为“环保/无铅砷镉”系列。</td>
+              <td>379 条，是 CDGM/NHG 中最常见前缀。</td>
+              <td>默认优先选择，适合量产、环保合规和普通研磨抛光玻璃件。</td>
+            </tr>
+            <tr>
+              <td><code>D-</code></td>
+              <td><span class="status ok">确认</span></td>
+              <td>低软化点、适合精密模压的环保玻璃。NHG 代理资料也说明适合 precision lens molding 的玻璃用 <code>D-</code> 标识。</td>
+              <td>165 条，CDGM 和 NHG 都有。</td>
+              <td>适合玻璃非球面和小口径模压件；用于微型长焦时可减少研磨非球面成本。</td>
+            </tr>
+            <tr>
+              <td><code>S-</code></td>
+              <td><span class="status unknown">待确认</span></td>
+              <td>公开 GB/T/CDGM 命名规则中未作为通用前缀解释。本库中集中出现在 NHG，常与 <code>H-</code> 名称成对且光学常数相同或极接近。</td>
+              <td>168 条，全部来自 NHG202501。</td>
+              <td>更像厂商/库内别名或供应系列；正式采购前应向 NHG 或代理确认。</td>
+            </tr>
+            <tr>
+              <td><code>L-</code></td>
+              <td><span class="status unknown">待确认</span></td>
+              <td>本库中出现在 NHG，公开通用规则没有确认其为物理/化学含义。不要和后缀 <code>L</code> 混淆。</td>
+              <td>86 条，全部来自 NHG202501。</td>
+              <td>按别名或特殊供货系列处理；若有 <code>@MY</code>，更应以供应商数据表为准。</td>
+            </tr>
+            <tr>
+              <td>无前缀</td>
+              <td><span class="status infer">推断</span></td>
+              <td>老牌号、传统牌号、红外材料或塑料材料可能没有 <code>H-</code>/<code>D-</code> 前缀。</td>
+              <td>如 <code>ZF7LGT</code>、<code>IRG201</code>、<code>OKP4</code>。</td>
+              <td>需要结合材料库的环保状态、供应状态和波段范围判断。</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="family">
+        <h2>材料族解读</h2>
+        <p>材料族来自玻璃名中的核心字母，例如 <code>FK</code>、<code>ZK</code>、<code>ZF</code>、<code>ZLAF</code>。它主要反映材料在 <code>nd-vd</code> 图上的区域和化学组成倾向。</p>
+        <table>
+          <thead><tr><th>族名</th><th>常见中文/英文含义</th><th>典型特性</th><th>微型长焦中的常见用途</th></tr></thead>
+          <tbody>
+            <tr><td><code>FK</code></td><td>氟冠 / Fluor Crown</td><td>低折射率、极高阿贝数，色散低。</td><td>正透镜色差补偿、二级光谱控制；但光焦度能力弱。</td></tr>
+            <tr><td><code>QK</code></td><td>轻冠 / Light Crown</td><td>低密度、低到中折射率、中高阿贝数。</td><td>轻量化普通正透镜或窗口。</td></tr>
+            <tr><td><code>PK</code></td><td>磷酸盐冠 / Phosphate Crown</td><td>中高阿贝数，部分材料有特殊色散价值。</td><td>轴向色差和二级光谱校正。</td></tr>
+            <tr><td><code>K</code></td><td>冠牌 / Crown</td><td>中等折射率、较高阿贝数，例如 K9/H-K9L。</td><td>通用正透镜、保护片、基准替换材料。</td></tr>
+            <tr><td><code>BAK</code>/<code>BAF</code></td><td>钡冠/钡火石 / Barium Crown/Flint</td><td>中高折射率，中等色散，密度较 K 类高。</td><td>折中型正/负组，常用于控制像差和色差。</td></tr>
+            <tr><td><code>ZK</code></td><td>重冠 / Dense Crown</td><td>较高折射率、仍保持较高阿贝数。</td><td>微型镜头中很有价值，可提供较强正光焦度且色散不过大。</td></tr>
+            <tr><td><code>LAK</code></td><td>镧冠 / Lanthanum Crown</td><td>高折射率、中高阿贝数，常用于高性能紧凑镜头。</td><td>前组/主正组，压缩 TTL、减小曲率、控制球差。</td></tr>
+            <tr><td><code>F</code>/<code>QF</code></td><td>火石/轻火石 / Flint/Light Flint</td><td>较低阿贝数，色散较大。</td><td>负透镜或消色差组合中的色散补偿。</td></tr>
+            <tr><td><code>ZF</code></td><td>重火石 / Dense Flint</td><td>高折射率、低阿贝数，色散强。</td><td>telephoto 后组负镜、倍率色差/轴向色差校正。</td></tr>
+            <tr><td><code>LAF</code>/<code>ZLAF</code></td><td>镧火石/重镧火石 / Lanthanum Flint/Dense Lanthanum Flint</td><td>高到超高折射率，中低阿贝数；密度和成本通常更高。</td><td>强负组、紧凑化、高阶像差校正；需权衡重量和加工。</td></tr>
+            <tr><td><code>BIF</code></td><td>铋系火石倾向</td><td>超高折射率、低阿贝数，常伴随较高密度或色散。</td><td>极端压缩结构时考虑，但要谨慎验证透过率和热稳定性。</td></tr>
+          </tbody>
+        </table>
+        <h3>本库材料族数量最多的前几类</h3>
+        <table>
+          <thead><tr><th>族名</th><th>数量</th><th>快速理解</th></tr></thead>
+          <tbody>
+            <tr><td><code>ZLAF</code></td><td>160</td><td>高折射镧火石类，是库里高折射/中低阿贝主力。</td></tr>
+            <tr><td><code>ZF</code></td><td>138</td><td>重火石，常用于负光焦度与色差校正。</td></tr>
+            <tr><td><code>LAF</code></td><td>86</td><td>镧火石，高折射但一般没有 ZLAF 那么极端。</td></tr>
+            <tr><td><code>LAK</code></td><td>85</td><td>镧冠，高折射且相对低色散，适合紧凑正组。</td></tr>
+            <tr><td><code>ZK</code></td><td>74</td><td>重冠，高折射中高阿贝，微型镜头常用候选。</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="suffix">
+        <h2>后缀解读</h2>
+        <table>
+          <thead><tr><th>后缀/标记</th><th>可信度</th><th>含义</th><th>例子</th><th>设计影响</th></tr></thead>
+          <tbody>
+            <tr><td><code>GT</code></td><td><span class="status ok">确认</span></td><td>高透过 glass，常解释为“高透”。</td><td><code>H-K9LGT</code>、<code>H-ZF52GT</code></td><td>优先用于蓝紫端、厚镜片、强吸收风险材料。</td></tr>
+            <tr><td><code>TT</code></td><td><span class="status ok">确认</span></td><td>超高透过或特透标记。</td><td><code>ZF7LTT</code>、<code>H-ZF52TT</code></td><td>比 GT 更强调透过率，需核对实际光谱数据。</td></tr>
+            <tr><td><code>L</code></td><td><span class="status ok">确认</span></td><td>相对原牌号光学常数略低或微调；也可能表示同类低偏差版本。具体需看对应牌号。</td><td><code>H-K9L</code>、<code>H-FK61B</code> 中的 L/B 属于变体标记体系的一部分。</td><td>不可只按名称判断，必须比较 <code>Nd</code>、<code>Vd</code>。</td></tr>
+            <tr><td><code>N</code></td><td><span class="status ok">确认</span></td><td>改进型/新型标记，常用于改善工艺、材料可得性或综合性能。</td><td><code>H-FK95N</code>、<code>H-ZLAF68N</code></td><td>优先看是否替代老牌号，量产供应可能更好。</td></tr>
+            <tr><td><code>A/B/C/D/E/F</code></td><td><span class="status ok">确认</span></td><td>配方改型顺序，主要光学常数相近，但物化性能可能改变。</td><td><code>H-ZF7LA</code>、<code>H-ZK9B</code></td><td>同名近邻材料替换时要检查化学稳定性、密度、热参数。</td></tr>
+            <tr><td><code>-25</code></td><td><span class="status ok">确认</span></td><td>低软化点玻璃按 -25 ℃/h 退火速率得到的折射率数据。</td><td><code>D-K9-25</code>、<code>D-FK61-25</code></td><td>模压件优化时要与实际退火/冷却工艺一致。</td></tr>
+            <tr><td><code>AGT</code>/<code>BGT</code>/<code>LGT</code></td><td><span class="status infer">组合</span></td><td>通常是配方变体字母加 <code>GT</code> 的组合。</td><td><code>H-ZF72AGT</code>、<code>H-ZLAF53BGT</code></td><td>先拆成“变体 + 高透过”，再比较实际光谱和热数据。</td></tr>
+            <tr><td><code>@MY</code></td><td><span class="status unknown">待确认</span></td><td>本地 NHG 库出现，公开命名规则未确认。可能是市场、客户、批次或地区标记。</td><td><code>L-FK95@MY</code>、<code>D-FK95@MY</code></td><td>采购和设计冻结前必须向供方确认。</td></tr>
+            <tr><td><code>*</code></td><td><span class="status unknown">待确认</span></td><td>本地 CDGM 库有星号材料，公开规则未确认。</td><td><code>H-K9L*</code></td><td>按库内特殊别名处理，不建议作为图纸正式材料名。</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="plastic">
+        <h2>塑料材料命名</h2>
+        <p>塑料库不遵循玻璃的 GB/T 牌号规则，更多来自材料商品名或厂商系列。选塑料镜片时，除了 <code>Nd/Vd</code>，热膨胀、吸湿、双折射、注塑收缩、镀膜附着力都要进入公差和环境分析。</p>
+        <table>
+          <thead><tr><th>系列/名称</th><th>可信来源对应</th><th>本库特性</th><th>用途建议</th></tr></thead>
+          <tbody>
+            <tr><td><code>APL5014</code>、<code>APL5514ML</code>、<code>APL5014CL/GH</code></td><td>APEL，Mitsui Chemicals 的 COC 光学树脂。</td><td>约 <code>Nd=1.544</code>、<code>Vd=56</code>，低色散塑料。</td><td>正透镜、低色散塑料片、手机/微型镜头常用注塑候选。</td></tr>
+            <tr><td><code>OKP4</code>、<code>OKP4HT</code>、<code>OKP1</code></td><td>Osaka Gas Chemicals 的 OKP Optical Plastic。</td><td>约 <code>Nd=1.607-1.642</code>、<code>Vd=22-27</code>，高折射低阿贝。</td><td>负组、色差补偿或高折射塑料片；注意双折射和耐热等级差异。</td></tr>
+            <tr><td><code>EP4500</code> 至 <code>EP9000</code></td><td>Mitsubishi Gas Chemical / Iupizeta EP。</td><td>约 <code>Nd=1.616-1.671</code>、<code>Vd=19-26</code>，高折射高色散。</td><td>手机镜头常见高折射塑料，可缩短 TTL；适合负透镜或强光焦度薄片。</td></tr>
+            <tr><td><code>330R</code>、<code>480R</code>、<code>F52R</code>、<code>E48R</code> 等</td><td>ZEONEX/ZEONOR COP 系列倾向。</td><td>约 <code>Nd=1.51-1.536</code>、<code>Vd≈56</code>，低吸湿、低双折射。</td><td>低色散塑料正片、窗口、环境稳定性要求较高的塑料件。</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="telephoto">
+        <h2>微型长焦镜头选材建议</h2>
+        <table>
+          <thead><tr><th>镜片位置/作用</th><th>材料目标</th><th>本库可先看的材料族</th><th>注意事项</th></tr></thead>
+          <tbody>
+            <tr><td>前组主正光焦度</td><td>中高 <code>Nd</code>、中高 <code>Vd</code>，减小曲率同时压色差。</td><td><code>LAK</code>、<code>ZK</code>、部分 <code>PK/ZPK</code>、低色散 APEL/COP 塑料。</td><td>不要只追求高折射，前组色散过大会拉大轴向色差。</td></tr>
+            <tr><td>后组负 telephoto 镜片</td><td>高 <code>Nd</code>、低 <code>Vd</code>，提供负光焦度和短总长。</td><td><code>ZF</code>、<code>LAF</code>、<code>ZLAF</code>、OKP/EP 高折射塑料。</td><td>控制倍率色差、场曲、温漂；高折射玻璃密度和加工成本较高。</td></tr>
+            <tr><td>消色差配对正片</td><td>高 <code>Vd</code>、必要时看 <code>dPgF</code> 异常色散。</td><td><code>FK</code>、<code>PK</code>、<code>QK</code>。</td><td>FK 类折射率低，光焦度大时曲率和像差会变敏感。</td></tr>
+            <tr><td>非球面塑料片</td><td>可注塑、低双折射、热稳定性匹配。</td><td>APEL、ZEONEX 作低色散正片；OKP/EP 作高折射高色散片。</td><td>必须做 -20 到 70 ℃ 或项目指定温区的 refocus/MTF/CRA 检查。</td></tr>
+            <tr><td>靠近光阑或像面的薄片</td><td>透过率、镀膜、鬼像和热稳定性优先。</td><td><code>H-K9L</code>、<code>H-K9LGT</code>、低吸湿 COP。</td><td>若靠近像面，材料折射率变化会直接影响焦移和 chief ray。</td></tr>
+          </tbody>
+        </table>
+        <div class="note">推荐工作流：先用 <code>Nd/Vd</code> 选 5 到 10 个候选，再在 Zemax 中做玻璃替换和重新优化，最后用 MTF、LCA、lateral color、场曲、畸变、透过率和热分析决定材料，而不是按名称直接定版。</div>
+      </section>
+
+      <section id="uncertain">
+        <h2>不确定命名与处理建议</h2>
+        <table>
+          <thead><tr><th>标记</th><th>本库观察</th><th>建议</th></tr></thead>
+          <tbody>
+            <tr><td><code>S-</code></td><td>NHG 中大量出现，常与 <code>H-</code> 成对，例如 <code>S-K9L</code> 与 <code>H-K9L</code> 的 <code>Nd/Vd</code> 相同。</td><td>作为库内别名/系列处理，图纸和采购名优先使用供方确认的正式牌号。</td></tr>
+            <tr><td><code>L-</code></td><td>NHG 中出现，例如 <code>L-FK95</code>、<code>L-FK95@MY</code>。</td><td>不要和后缀 <code>L</code> 混用；若参与优化，需要锁定具体 catalog 和版本。</td></tr>
+            <tr><td><code>@MY</code></td><td>出现在 NHG 的少量材料，常与 <code>L-</code>/<code>D-</code> 搭配。</td><td>按供应商内部/地区/客户标记看待，公开来源不足，需邮件确认。</td></tr>
+            <tr><td><code>*</code></td><td>CDGM 中 <code>H-K9L*</code> 等少量材料。</td><td>作为特殊库标记看待，不建议在正式 BOM 中保留星号。</td></tr>
+            <tr><td><code>IRG</code>/<code>HWS</code></td><td>红外材料，字段中的 <code>Nd/Vd</code> 不应按普通 d 线可见光玻璃解释。</td><td>若用于摄影可见光镜头，通常排除；若做 NIR/MWIR，要读取对应波长折射率。</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="sources">
+        <h2>参考来源</h2>
+        <ul>
+          <li><a href="https://www.opticals.com.cn/optical-glass-grade-classification-and-naming-rules.html">United Optical Works: Optical Glass Grade Classification and Naming Rules</a>，用于确认 <code>H-</code>、<code>D-</code>、<code>GT</code>、<code>L/N</code>、材料族代码等命名规则。</li>
+          <li><a href="https://agrmeng.com/innovation-technology/optical-glass-grade-classification-and-naming/">Optical Glass Grade Classification and Naming</a>，用于交叉确认 <code>TT</code>、<code>-25</code> 等标记。</li>
+          <li><a href="https://www.nikon.com/business/components/lineup/materials/optical-glass/catalog/">Nikon Optical Glass J-series catalog</a>，用于对照常见玻璃族在 <code>nd-vd</code> 图中的分类。</li>
+          <li><a href="https://www.hbnhg.com/uploadfiles/2025/11/20251112164229898.pdf">NHG colorless/infrared optical glass handbook</a>，用于确认 NHG 是本库材料供应商及其光学玻璃数据背景。</li>
+          <li><a href="https://www.ogc.co.jp/e/products/fluorene/okp.html">Osaka Gas Chemicals OKP Optical Plastic</a>，用于确认 OKP 系列高折射、低阿贝、低双折射等特征。</li>
+          <li><a href="https://iupizeta.mgc.co.jp/en/product/">Mitsubishi Gas Chemical Iupizeta EP product lineup</a>，用于确认 EP 系列折射率、阿贝数和手机镜头应用。</li>
+          <li><a href="https://jp.mitsuichemicals.com/en/special/apel/about/">Mitsui Chemicals APEL</a>，用于确认 APEL/APL 系列 COC 光学树脂特征。</li>
+          <li><a href="https://www.zeonsmi.com/products/cyclo-olefin-polymer-cop/optical-cop/">Zeon Optical Grade ZEONEX COP</a>，用于确认 ZEONEX/COP 低吸湿、低双折射、高阿贝数等特征。</li>
+        </ul>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
