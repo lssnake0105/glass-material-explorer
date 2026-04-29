@@ -10,6 +10,12 @@
 https://lssnake0105.github.io/glass-material-explorer/
 ```
 
+材料命名解读页面：
+
+```text
+https://lssnake0105.github.io/glass-material-explorer/naming-guide/
+```
+
 也可以直接下载仓库后，在本地打开 `index.html` 或 `material_explorer.html`。
 
 ## 主要功能
@@ -28,6 +34,7 @@ https://lssnake0105.github.io/glass-material-explorer/
 |---|---|
 | `index.html` | GitHub Pages 默认入口文件 |
 | `material_explorer.html` | 主要网页文件，可直接本地打开 |
+| `naming-guide/index.html` | GitHub Pages 上的材料命名解读子页面 |
 | `build_material_explorer.js` | 从 TXT 材料库重新生成网页的脚本 |
 | `CDGM-ZEMAX202409.txt` | CDGM 材料库数据 |
 | `NHG202501.txt` | NHG 材料库数据 |
