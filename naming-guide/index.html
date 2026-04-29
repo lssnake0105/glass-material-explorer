@@ -44,6 +44,58 @@
       color: #d9e7ef;
       font-size: 17px;
     }
+    .top-links {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+    .top-links a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 6px 10px;
+      border: 1px solid rgba(255,255,255,0.42);
+      border-radius: 6px;
+      color: white;
+      text-decoration: none;
+      background: rgba(255,255,255,0.1);
+    }
+    .top-links a:hover {
+      background: rgba(255,255,255,0.18);
+    }
+    .guide-search {
+      margin-top: 18px;
+      max-width: 920px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+    }
+    .guide-search input {
+      min-width: 0;
+      min-height: 38px;
+      border: 1px solid rgba(255,255,255,0.58);
+      border-radius: 6px;
+      padding: 7px 10px;
+      color: #10293a;
+      font: inherit;
+      background: rgba(255,255,255,0.94);
+    }
+    .guide-search button {
+      min-height: 38px;
+      border: 1px solid rgba(255,255,255,0.58);
+      border-radius: 6px;
+      padding: 7px 12px;
+      color: white;
+      font: inherit;
+      cursor: pointer;
+      background: rgba(255,255,255,0.14);
+    }
+    .search-summary {
+      margin-top: 7px;
+      color: #d9e7ef;
+      font-size: 13px;
+    }
     main {
       display: grid;
       grid-template-columns: minmax(190px, 260px) minmax(0, 1fr);
@@ -112,6 +164,15 @@
       padding: 12px 14px;
       margin: 14px 0;
     }
+    mark {
+      background: #fff1a8;
+      color: inherit;
+      padding: 0 2px;
+      border-radius: 2px;
+    }
+    .hidden-by-search {
+      display: none !important;
+    }
     .status {
       display: inline-block;
       min-width: 58px;
@@ -152,6 +213,7 @@
       nav { position: static; }
       .grid { grid-template-columns: 1fr; }
       table { font-size: 13px; }
+      .guide-search { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -159,6 +221,33 @@
   <header>
     <h1>Zemax 材料库命名解读</h1>
     <p>基于本项目的 CDGM、NHG、PLASTIC 三个 TXT 材料库，整理材料名前缀、后缀、材料族、典型光学特性以及微型长焦镜头选材时的使用建议。</p>
+    <div class="top-links">
+      <a href="/glass-material-explorer/">返回材料查询</a>
+      <a href="/glass-material-explorer/index.html">Explorer 首页</a>
+    </div>
+    <div class="guide-search" role="search">
+      <input id="guideSearch" list="guideSearchTerms" placeholder="搜索命名、前缀、后缀或材料族，例如 @MY / ZF / D- / OKP">
+      <button id="clearGuideSearch" type="button">清除</button>
+      <datalist id="guideSearchTerms">
+        <option value="@MY"></option>
+        <option value="D-"></option>
+        <option value="H-"></option>
+        <option value="S-"></option>
+        <option value="L-"></option>
+        <option value="GT"></option>
+        <option value="TT"></option>
+        <option value="FK"></option>
+        <option value="ZK"></option>
+        <option value="LAK"></option>
+        <option value="ZF"></option>
+        <option value="ZLAF"></option>
+        <option value="OKP"></option>
+        <option value="APEL"></option>
+        <option value="Iupizeta"></option>
+        <option value="ZEONEX"></option>
+      </datalist>
+    </div>
+    <div id="searchSummary" class="search-summary">输入关键词可筛选并高亮表格行和段落。</div>
   </header>
 
   <main>
@@ -363,5 +452,74 @@
       </section>
     </div>
   </main>
+  <script>
+    const guideSearch = document.getElementById("guideSearch");
+    const clearGuideSearch = document.getElementById("clearGuideSearch");
+    const searchSummary = document.getElementById("searchSummary");
+    const searchableNodes = Array.from(document.querySelectorAll("section p, section li, section td, section th, section h2, section h3"));
+    const originalHtml = new Map(searchableNodes.map((node) => [node, node.innerHTML]));
+    const searchableRows = Array.from(document.querySelectorAll("tbody tr"));
+    const searchableSections = Array.from(document.querySelectorAll("section"));
+
+    function escapeRegExp(text) {
+      return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
+    function normalizeText(text) {
+      return text.toLowerCase().replace(/\s+/g, " ");
+    }
+
+    function applyGuideSearch() {
+      const query = guideSearch.value.trim();
+      const normalizedQuery = normalizeText(query);
+      let matchedNodes = 0;
+      let matchedRows = 0;
+
+      for (const node of searchableNodes) {
+        node.innerHTML = originalHtml.get(node);
+      }
+      for (const row of searchableRows) {
+        row.classList.remove("hidden-by-search");
+      }
+      for (const section of searchableSections) {
+        section.classList.remove("hidden-by-search");
+      }
+
+      if (!query) {
+        searchSummary.textContent = "输入关键词可筛选并高亮表格行和段落。";
+        return;
+      }
+
+      const matcher = new RegExp(escapeRegExp(query), "gi");
+      for (const node of searchableNodes) {
+        const text = normalizeText(node.textContent || "");
+        if (text.includes(normalizedQuery)) {
+          matchedNodes += 1;
+          node.innerHTML = originalHtml.get(node).replace(matcher, (hit) => "<mark>" + hit + "</mark>");
+        }
+      }
+
+      for (const row of searchableRows) {
+        const text = normalizeText(row.textContent || "");
+        const match = text.includes(normalizedQuery);
+        row.classList.toggle("hidden-by-search", !match);
+        if (match) matchedRows += 1;
+      }
+
+      for (const section of searchableSections) {
+        const text = normalizeText(section.textContent || "");
+        section.classList.toggle("hidden-by-search", !text.includes(normalizedQuery));
+      }
+
+      searchSummary.textContent = "搜索 “" + query + "”：匹配 " + matchedNodes + " 个文本块，" + matchedRows + " 行表格。";
+    }
+
+    guideSearch.addEventListener("input", applyGuideSearch);
+    clearGuideSearch.addEventListener("click", () => {
+      guideSearch.value = "";
+      applyGuideSearch();
+      guideSearch.focus();
+    });
+  </script>
 </body>
 </html>

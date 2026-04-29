@@ -237,6 +237,26 @@ const html = `<!doctype html>
       max-width: 1100px;
       font-size: 14px;
     }
+    .top-links {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+    .top-links a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 6px 10px;
+      border: 1px solid rgba(255,255,255,0.42);
+      border-radius: 6px;
+      color: white;
+      text-decoration: none;
+      background: rgba(255,255,255,0.1);
+    }
+    .top-links a:hover {
+      background: rgba(255,255,255,0.18);
+    }
     .app {
       display: grid;
       grid-template-columns: minmax(260px, 330px) minmax(540px, 1fr) minmax(320px, 410px);
@@ -504,6 +524,10 @@ const html = `<!doctype html>
   <header>
     <h1>玻璃材料替代查询与 Nd-Vd 图</h1>
     <p>离线静态工具。支持 CDGM、NHG、PLASTIC 三个材料库的材料搜索、库/tag/数值筛选、Nd-Vd 可视化、局部切片和综合相近替代初筛。</p>
+    <div class="top-links">
+      <a href="./naming-guide/">材料命名解读</a>
+      <a href="./material_naming_guide.html">本地命名文档</a>
+    </div>
   </header>
 
   <div class="app">
