@@ -205,7 +205,7 @@
             <tr><td><code>H-K9L</code></td><td><code>H-</code> + <code>K</code> + <code>9</code> + <code>L</code></td><td>环保冠牌玻璃，K9 的低/微调变体，是常见 BK7 近似替代材料。</td></tr>
             <tr><td><code>D-K9GT-25</code></td><td><code>D-</code> + <code>K</code> + <code>9</code> + <code>GT</code> + <code>-25</code></td><td>低软化点模压冠牌玻璃，高透过版本，折射率按 -25 ℃/h 退火速率给出。</td></tr>
             <tr><td><code>H-ZF72AGT</code></td><td><code>H-</code> + <code>ZF</code> + <code>72</code> + <code>A</code> + <code>GT</code></td><td>环保重火石玻璃，配方 A 改型，高透过版本。</td></tr>
-            <tr><td><code>L-FK95@MY</code></td><td><code>L-</code> + <code>FK</code> + <code>95</code> + <code>@MY</code></td><td>NHG 库中的特殊标记版本，<code>@MY</code> 含义未在公开命名规则中确认。</td></tr>
+            <tr><td><code>L-FK95@MY</code></td><td><code>L-</code> + <code>FK</code> + <code>95</code> + <code>@MY</code></td><td>NHG 低熔点玻璃的模压后折射率版本；<code>MY</code> 来自“模压”的拼音首字母。</td></tr>
           </tbody>
         </table>
       </section>
@@ -298,7 +298,7 @@
             <tr><td><code>A/B/C/D/E/F</code></td><td><span class="status ok">确认</span></td><td>配方改型顺序，主要光学常数相近，但物化性能可能改变。</td><td><code>H-ZF7LA</code>、<code>H-ZK9B</code></td><td>同名近邻材料替换时要检查化学稳定性、密度、热参数。</td></tr>
             <tr><td><code>-25</code></td><td><span class="status ok">确认</span></td><td>低软化点玻璃按 -25 ℃/h 退火速率得到的折射率数据。</td><td><code>D-K9-25</code>、<code>D-FK61-25</code></td><td>模压件优化时要与实际退火/冷却工艺一致。</td></tr>
             <tr><td><code>AGT</code>/<code>BGT</code>/<code>LGT</code></td><td><span class="status infer">组合</span></td><td>通常是配方变体字母加 <code>GT</code> 的组合。</td><td><code>H-ZF72AGT</code>、<code>H-ZLAF53BGT</code></td><td>先拆成“变体 + 高透过”，再比较实际光谱和热数据。</td></tr>
-            <tr><td><code>@MY</code></td><td><span class="status unknown">待确认</span></td><td>本地 NHG 库出现，公开命名规则未确认。可能是市场、客户、批次或地区标记。</td><td><code>L-FK95@MY</code>、<code>D-FK95@MY</code></td><td>采购和设计冻结前必须向供方确认。</td></tr>
+            <tr><td><code>@MY</code></td><td><span class="status ok">确认</span></td><td>NHG 资料明确说明 <code>MY</code> 为“模压”的拼音首字母，表示低熔点玻璃在模压后急冷条件下的折射率参考值。</td><td><code>L-FK95@MY</code>、<code>D-FK95@MY</code></td><td>用于模压玻璃件设计时，比普通退火态数据更接近模压后光学常数；仍需结合实际模压工艺确认。</td></tr>
             <tr><td><code>*</code></td><td><span class="status unknown">待确认</span></td><td>本地 CDGM 库有星号材料，公开规则未确认。</td><td><code>H-K9L*</code></td><td>按库内特殊别名处理，不建议作为图纸正式材料名。</td></tr>
           </tbody>
         </table>
@@ -340,7 +340,7 @@
           <tbody>
             <tr><td><code>S-</code></td><td>NHG 中大量出现，常与 <code>H-</code> 成对，例如 <code>S-K9L</code> 与 <code>H-K9L</code> 的 <code>Nd/Vd</code> 相同。</td><td>作为库内别名/系列处理，图纸和采购名优先使用供方确认的正式牌号。</td></tr>
             <tr><td><code>L-</code></td><td>NHG 中出现，例如 <code>L-FK95</code>、<code>L-FK95@MY</code>。</td><td>不要和后缀 <code>L</code> 混用；若参与优化，需要锁定具体 catalog 和版本。</td></tr>
-            <tr><td><code>@MY</code></td><td>出现在 NHG 的少量材料，常与 <code>L-</code>/<code>D-</code> 搭配。</td><td>按供应商内部/地区/客户标记看待，公开来源不足，需邮件确认。</td></tr>
+            <tr><td><code>@MY</code></td><td>出现在 NHG 低熔点材料中，常与 <code>L-</code>/<code>D-</code> 搭配；资料表给出“模压后急冷”折射率。</td><td>可按模压后参考数据处理；若用于最终图纸和量产，仍应向供应商确认实际成型工艺和折射率公差。</td></tr>
             <tr><td><code>*</code></td><td>CDGM 中 <code>H-K9L*</code> 等少量材料。</td><td>作为特殊库标记看待，不建议在正式 BOM 中保留星号。</td></tr>
             <tr><td><code>IRG</code>/<code>HWS</code></td><td>红外材料，字段中的 <code>Nd/Vd</code> 不应按普通 d 线可见光玻璃解释。</td><td>若用于摄影可见光镜头，通常排除；若做 NIR/MWIR，要读取对应波长折射率。</td></tr>
           </tbody>
@@ -354,6 +354,7 @@
           <li><a href="https://agrmeng.com/innovation-technology/optical-glass-grade-classification-and-naming/">Optical Glass Grade Classification and Naming</a>，用于交叉确认 <code>TT</code>、<code>-25</code> 等标记。</li>
           <li><a href="https://www.nikon.com/business/components/lineup/materials/optical-glass/catalog/">Nikon Optical Glass J-series catalog</a>，用于对照常见玻璃族在 <code>nd-vd</code> 图中的分类。</li>
           <li><a href="https://www.hbnhg.com/uploadfiles/2025/11/20251112164229898.pdf">NHG colorless/infrared optical glass handbook</a>，用于确认 NHG 是本库材料供应商及其光学玻璃数据背景。</li>
+          <li><a href="https://www.hbnhg.com/uploadfiles/2024/08/The%20reference%20table%20of%20refractive%20index%20before%20and%20after%20mould%20pressing%20%2820240729%29.pdf">NHG 低熔点玻璃模压前后折射率参考表</a>，用于确认 <code>@MY</code> 表示“模压”后的折射率参考数据。</li>
           <li><a href="https://www.ogc.co.jp/e/products/fluorene/okp.html">Osaka Gas Chemicals OKP Optical Plastic</a>，用于确认 OKP 系列高折射、低阿贝、低双折射等特征。</li>
           <li><a href="https://iupizeta.mgc.co.jp/en/product/">Mitsubishi Gas Chemical Iupizeta EP product lineup</a>，用于确认 EP 系列折射率、阿贝数和手机镜头应用。</li>
           <li><a href="https://jp.mitsuichemicals.com/en/special/apel/about/">Mitsui Chemicals APEL</a>，用于确认 APEL/APL 系列 COC 光学树脂特征。</li>
