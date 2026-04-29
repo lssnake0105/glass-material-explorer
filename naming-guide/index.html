@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Zemax 材料库命名解读</title>
+  <link rel="icon" href="data:,">
   <style>
     :root {
       color-scheme: light;
@@ -95,6 +96,51 @@
       margin-top: 7px;
       color: #d9e7ef;
       font-size: 13px;
+    }
+    .material-lookup {
+      display: none;
+      max-width: 920px;
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.12);
+      color: #eef7fb;
+    }
+    .material-lookup.is-visible {
+      display: block;
+    }
+    .material-lookup h2 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      color: white;
+    }
+    .material-hit-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 8px;
+    }
+    .material-hit {
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 7px;
+      padding: 9px;
+      background: rgba(255,255,255,0.12);
+    }
+    .material-hit strong {
+      display: block;
+      margin-bottom: 4px;
+      color: white;
+      overflow-wrap: anywhere;
+    }
+    .material-hit span {
+      display: block;
+      font-size: 12px;
+      color: #d9e7ef;
+    }
+    .material-hit p {
+      margin: 7px 0 0;
+      font-size: 13px;
+      color: #eef7fb;
     }
     main {
       display: grid;
@@ -242,12 +288,17 @@
         <option value="ZF"></option>
         <option value="ZLAF"></option>
         <option value="OKP"></option>
+        <option value="APL5014GH"></option>
+        <option value="GH"></option>
+        <option value="CL"></option>
+        <option value="ML"></option>
         <option value="APEL"></option>
         <option value="Iupizeta"></option>
         <option value="ZEONEX"></option>
       </datalist>
     </div>
     <div id="searchSummary" class="search-summary">输入关键词可筛选并高亮表格行和段落。</div>
+    <div id="materialLookup" class="material-lookup" aria-live="polite"></div>
   </header>
 
   <main>
@@ -405,6 +456,16 @@
             <tr><td><code>330R</code>、<code>480R</code>、<code>F52R</code>、<code>E48R</code> 等</td><td>ZEONEX/ZEONOR COP 系列倾向。</td><td>约 <code>Nd=1.51-1.536</code>、<code>Vd≈56</code>，低吸湿、低双折射。</td><td>低色散塑料正片、窗口、环境稳定性要求较高的塑料件。</td></tr>
           </tbody>
         </table>
+        <h3>APEL / APL 后缀说明</h3>
+        <p><code>APL5014GH</code> 这类名称中的 <code>GH</code> 不是通用玻璃命名后缀，而是三井化学 APEL 光学树脂的商品等级代码。本地库备注写明 <code>APL5014GH</code> 是面向 HMD/HUD 光学镜片的高透明等级，公开资料也显示它是为改善短波长透过率而开发的等级。设计中应把 <code>GH</code> 理解为厂商光学级别/用途标记，而不是可直接类比 <code>GT</code>、<code>TT</code> 的玻璃高透命名。</p>
+        <table>
+          <thead><tr><th>后缀/等级</th><th>本库观察</th><th>建议理解</th></tr></thead>
+          <tbody>
+            <tr><td><code>GH</code></td><td><code>APL5014GH</code> 与 <code>APL5514ML</code> 的 <code>Nd/Vd</code> 相同；备注为 HMD/HUD 高透明光学镜片等级。</td><td>APEL 厂商等级代码，偏高透明、短波长透过率改善用途；用于厚件、近眼显示或高透明需求时优先核对。</td></tr>
+            <tr><td><code>CL</code></td><td><code>APL5014CL</code> 的备注为手机摄像头塑料镜片材料。</td><td>APEL 厂商等级代码，偏手机/微型相机镜头应用；不要把 <code>CL</code> 当作玻璃命名规则解释。</td></tr>
+            <tr><td><code>ML</code></td><td><code>APL5514ML</code> 的备注为典型塑料光学镜片等级。</td><td>APEL 厂商等级代码，偏通用光学镜片等级；具体含义以三井化学数据表和供方确认优先。</td></tr>
+          </tbody>
+        </table>
       </section>
 
       <section id="telephoto">
@@ -447,6 +508,8 @@
           <li><a href="https://www.ogc.co.jp/e/products/fluorene/okp.html">Osaka Gas Chemicals OKP Optical Plastic</a>，用于确认 OKP 系列高折射、低阿贝、低双折射等特征。</li>
           <li><a href="https://iupizeta.mgc.co.jp/en/product/">Mitsubishi Gas Chemical Iupizeta EP product lineup</a>，用于确认 EP 系列折射率、阿贝数和手机镜头应用。</li>
           <li><a href="https://jp.mitsuichemicals.com/en/special/apel/about/">Mitsui Chemicals APEL</a>，用于确认 APEL/APL 系列 COC 光学树脂特征。</li>
+          <li><a href="https://www.jstage.jst.go.jp/article/seikeikakou/26/1/26_26/_pdf/-char/en">J-STAGE: 环状烯烃共聚物 APEL 产品技术介绍</a>，用于确认 <code>APL5014GH</code> 是改善短波长透过率的新等级。</li>
+          <li><a href="https://www.hellot.net/news/article_print.html?no=46755">Hellot: APEL 光学用途与技术开发趋势</a>，用于交叉确认 <code>APL5014GH</code> 面向 HMD 等厚光学件的高透明用途。</li>
           <li><a href="https://www.zeonsmi.com/products/cyclo-olefin-polymer-cop/optical-cop/">Zeon Optical Grade ZEONEX COP</a>，用于确认 ZEONEX/COP 低吸湿、低双折射、高阿贝数等特征。</li>
         </ul>
       </section>
@@ -456,10 +519,32 @@
     const guideSearch = document.getElementById("guideSearch");
     const clearGuideSearch = document.getElementById("clearGuideSearch");
     const searchSummary = document.getElementById("searchSummary");
+    const materialLookup = document.getElementById("materialLookup");
     const searchableNodes = Array.from(document.querySelectorAll("section p, section li, section td, section th, section h2, section h3"));
     const originalHtml = new Map(searchableNodes.map((node) => [node, node.innerHTML]));
     const searchableRows = Array.from(document.querySelectorAll("tbody tr"));
     const searchableSections = Array.from(document.querySelectorAll("section"));
+    let materialIndex = null;
+    let materialIndexLoadTried = false;
+
+    const suffixNotes = {
+      GH: "APEL / APL 厂商等级代码。本地库备注为 HMD/HUD 高透明光学镜片等级，公开资料显示该等级偏短波长透过率改善用途。",
+      CL: "APEL / APL 厂商等级代码。本地库备注为手机摄像头塑料镜片材料。",
+      ML: "APEL / APL 厂商等级代码。本地库备注为典型塑料光学镜片等级。",
+      HT: "塑料材料厂商等级后缀，常与耐热或改进等级相关；具体含义需以厂商数据表为准。",
+      HTL: "塑料材料厂商等级后缀，常与耐热/高透或改进等级相关；具体含义需以厂商数据表为准。"
+    };
+
+    const familyNotes = {
+      APL: "三井化学 APEL / APL COC 光学树脂，低色散、低双折射、透明性好。",
+      OKP: "Osaka Gas Chemicals OKP 高折射光学塑料，常用于高折射/强色散塑料镜片。",
+      EP: "Mitsubishi Gas Chemical Iupizeta EP 高折射光学树脂系列。",
+      COP: "ZEONEX/ZEONOR 等环烯烃聚合物倾向，低吸湿、低双折射。",
+      ZF: "重火石玻璃，高折射低阿贝，常用于负组和色差校正。",
+      ZLAF: "重镧火石玻璃，高折射、中低阿贝，适合紧凑结构但需注意密度和成本。",
+      LAK: "镧冠玻璃，高折射且相对低色散，常用于紧凑正光焦度组。",
+      FK: "氟冠玻璃，低折射率、高阿贝数，适合低色散校正。"
+    };
 
     function escapeRegExp(text) {
       return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -469,11 +554,141 @@
       return text.toLowerCase().replace(/\s+/g, " ");
     }
 
-    function applyGuideSearch() {
+    function parseCsv(text) {
+      const rows = [];
+      let row = [];
+      let value = "";
+      let quoted = false;
+      for (let i = 0; i < text.length; i += 1) {
+        const ch = text[i];
+        const next = text[i + 1];
+        if (quoted) {
+          if (ch === '"' && next === '"') {
+            value += '"';
+            i += 1;
+          } else if (ch === '"') {
+            quoted = false;
+          } else {
+            value += ch;
+          }
+        } else if (ch === '"') {
+          quoted = true;
+        } else if (ch === ",") {
+          row.push(value);
+          value = "";
+        } else if (ch === "\n") {
+          row.push(value);
+          rows.push(row);
+          row = [];
+          value = "";
+        } else if (ch !== "\r") {
+          value += ch;
+        }
+      }
+      if (value || row.length) {
+        row.push(value);
+        rows.push(row);
+      }
+      const header = rows.shift() || [];
+      return rows.filter((r) => r.length === header.length).map((r) => Object.fromEntries(header.map((h, i) => [h, r[i]])));
+    }
+
+    function parseMaterialName(name) {
+      const out = { prefix: "", family: "", number: "", suffix: "", mark: "" };
+      let rest = name.replace(/\*$/, "");
+      const at = rest.match(/@([A-Za-z0-9_]+)$/);
+      if (at) {
+        out.mark = "@" + at[1];
+        rest = rest.slice(0, at.index);
+      }
+      const dash = rest.match(/-(\d+)$/);
+      if (dash) {
+        out.mark = "-" + dash[1];
+        rest = rest.slice(0, dash.index);
+      }
+      const prefix = rest.match(/^(H|D|S|L)-/);
+      if (prefix) {
+        out.prefix = prefix[1];
+        rest = rest.slice(prefix[0].length);
+      }
+      const sp = rest.match(/^SP-(\d+)([A-Z]*)$/);
+      if (sp) {
+        out.family = "SP";
+        out.number = sp[1];
+        out.suffix = sp[2] || "";
+        return out;
+      }
+      if (/^\d+[A-Z]+$/.test(rest)) {
+        const cop = rest.match(/^(\d+)([A-Z]+)$/);
+        out.family = "COP";
+        out.number = cop[1];
+        out.suffix = cop[2];
+        return out;
+      }
+      const m = rest.match(/^([A-Z]+)(\d*)([A-Z]*)$/);
+      if (m) {
+        out.family = m[1] || "";
+        out.number = m[2] || "";
+        out.suffix = m[3] || "";
+      }
+      return out;
+    }
+
+    async function ensureMaterialIndex() {
+      if (materialIndex || materialIndexLoadTried) return materialIndex || [];
+      materialIndexLoadTried = true;
+      const paths = ["../materials_parsed.csv", "./materials_parsed.csv", "/glass-material-explorer/materials_parsed.csv"];
+      for (const path of paths) {
+        try {
+          const response = await fetch(path);
+          if (!response.ok) continue;
+          materialIndex = parseCsv(await response.text()).map((m) => ({ ...m, parsed: parseMaterialName(m.Name || "") }));
+          return materialIndex;
+        } catch {
+          // Try the next path. File URLs may block fetch; GitHub Pages works.
+        }
+      }
+      materialIndex = [];
+      return materialIndex;
+    }
+
+    function renderMaterialLookup(query, matches, loaded) {
+      if (!query) {
+        materialLookup.classList.remove("is-visible");
+        materialLookup.innerHTML = "";
+        return;
+      }
+      if (!loaded) {
+        materialLookup.classList.add("is-visible");
+        materialLookup.innerHTML = "<h2>材料名查询</h2><p>材料索引暂时无法加载；在线 GitHub Pages 环境通常可用。本页正文搜索仍会继续工作。</p>";
+        return;
+      }
+      if (!matches.length) {
+        materialLookup.classList.add("is-visible");
+        materialLookup.innerHTML = "<h2>材料名查询</h2><p>没有在材料库索引中找到完整材料名匹配；可尝试搜索系列名、后缀或材料族。</p>";
+        return;
+      }
+      const cards = matches.slice(0, 12).map((m) => {
+        const p = m.parsed || parseMaterialName(m.Name || "");
+        const suffix = p.mark || p.suffix || "无";
+        const note = suffixNotes[p.suffix] || suffixNotes[p.mark?.replace("@", "")] || familyNotes[p.family] || "该标记更像厂商/库内牌号组成，具体含义需结合供应商数据表确认。";
+        return "<div class=\"material-hit\">" +
+          "<strong>" + (m.Name || "") + "</strong>" +
+          "<span>库：" + (m.File || "") + " · Nd " + (m.Nd || "") + " · Vd " + (m.Vd || "") + " · 密度 " + (m.Density || "") + "</span>" +
+          "<span>拆解：前缀 " + (p.prefix || "无") + " · 系列/族 " + (p.family || "未知") + " · 序号 " + (p.number || "无") + " · 后缀/标记 " + suffix + "</span>" +
+          "<p>" + note + "</p>" +
+        "</div>";
+      }).join("");
+      materialLookup.classList.add("is-visible");
+      materialLookup.innerHTML = "<h2>材料名查询：" + query + "</h2><div class=\"material-hit-grid\">" + cards + "</div>";
+    }
+
+    async function applyGuideSearch() {
       const query = guideSearch.value.trim();
       const normalizedQuery = normalizeText(query);
       let matchedNodes = 0;
       let matchedRows = 0;
+      let materialMatches = [];
 
       for (const node of searchableNodes) {
         node.innerHTML = originalHtml.get(node);
@@ -487,7 +702,29 @@
 
       if (!query) {
         searchSummary.textContent = "输入关键词可筛选并高亮表格行和段落。";
+        renderMaterialLookup("", [], true);
         return;
+      }
+
+      const index = await ensureMaterialIndex();
+      const materialIndexLoaded = Array.isArray(index) && index.length > 0;
+      if (materialIndexLoaded) {
+        materialMatches = index.filter((m) => {
+          const p = m.parsed || {};
+          const haystack = [
+            m.Name,
+            m.File,
+            p.prefix,
+            p.family,
+            p.number,
+            p.suffix,
+            p.mark,
+            familyNotes[p.family],
+            suffixNotes[p.suffix],
+            suffixNotes[p.mark?.replace("@", "")]
+          ].filter(Boolean).join(" ");
+          return normalizeText(haystack).includes(normalizedQuery);
+        });
       }
 
       const matcher = new RegExp(escapeRegExp(query), "gi");
@@ -511,7 +748,8 @@
         section.classList.toggle("hidden-by-search", !text.includes(normalizedQuery));
       }
 
-      searchSummary.textContent = "搜索 “" + query + "”：匹配 " + matchedNodes + " 个文本块，" + matchedRows + " 行表格。";
+      renderMaterialLookup(query, materialMatches, materialIndexLoaded);
+      searchSummary.textContent = "搜索 “" + query + "”：匹配 " + matchedNodes + " 个文本块，" + matchedRows + " 行表格，" + materialMatches.length + " 个材料名/后缀结果。";
     }
 
     guideSearch.addEventListener("input", applyGuideSearch);
