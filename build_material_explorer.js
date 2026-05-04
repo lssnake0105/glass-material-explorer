@@ -493,6 +493,19 @@ const html = `<!doctype html>
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 7px;
     }
+    .filter-control-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(84px, 116px);
+      gap: 7px;
+      margin-bottom: 7px;
+      align-items: center;
+    }
+    .boolean-filter {
+      display: grid;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .boolean-filter input { width: 100%; }
     .empty {
       color: var(--muted);
       padding: 12px;
@@ -575,8 +588,18 @@ const html = `<!doctype html>
 
         <div>
           <div class="section-label">Tag</div>
-          <input id="tagSearch" placeholder="过滤 tag 列表" style="width:100%; margin-bottom:7px;">
+          <div class="filter-control-row">
+            <input id="tagSearch" placeholder="过滤 tag 列表">
+            <select id="tagLogic" title="多个勾选 tag 的组合方式">
+              <option value="or" selected>OR</option>
+              <option value="and">AND</option>
+            </select>
+          </div>
           <div id="tagFilters" class="checkbox-grid"></div>
+          <div class="boolean-filter">
+            <input id="booleanFilter" placeholder='布尔筛选，例如 高透 AND (低色散 OR "后缀:GT") AND NOT 红外'>
+            <div id="booleanFilterHint" class="hint">布尔筛选支持 AND / OR / NOT、括号、引号；可写 tag:高透、library:CDGM、family:K、prefix:H、suffix:GT。</div>
+          </div>
         </div>
 
         <div>
@@ -776,7 +799,7 @@ const html = `<!doctype html>
       for (const id of [
         "searchInput","searchButton","materialNames","clearSelection","resetFilters","totalCount","visibleCount","neighborCount",
         "libraryFilters","showInfrared","ndMin","ndMax","vdMin","vdMax","dpgfMin","dpgfMax","densityMin","densityMax",
-        "familyFilters","tagSearch","tagFilters","customTagName","customTagMode","customTagPattern","addCustomTag",
+        "familyFilters","tagSearch","tagLogic","tagFilters","booleanFilter","booleanFilterHint","customTagName","customTagMode","customTagPattern","addCustomTag",
         "exportTags","importTags","clearTags","customTagJson","customRuleList","mainPlot","fitPlot","zoomSlice",
         "materialTable","tableHint","downloadFiltered","selectedDetails","similarTable","sliceVd","sliceNd","slicePlot",
         "sliceHint","tooltip"
@@ -833,6 +856,193 @@ const html = `<!doctype html>
       return new Set(Array.from(container.querySelectorAll("input[type=checkbox]:checked")).map((x) => x.value));
     }
 
+    function tokenizeBooleanFilter(text) {
+      const tokens = [];
+      let i = 0;
+      while (i < text.length) {
+        const ch = text[i];
+        if (/\\s/.test(ch)) {
+          i++;
+          continue;
+        }
+        if (ch === "(" || ch === ")") {
+          tokens.push(ch);
+          i++;
+          continue;
+        }
+        if (ch === '"' || ch === "'") {
+          const quote = ch;
+          let value = "";
+          i++;
+          while (i < text.length) {
+            if (text[i] === "\\\\" && i + 1 < text.length) {
+              value += text[i + 1];
+              i += 2;
+              continue;
+            }
+            if (text[i] === quote) {
+              i++;
+              break;
+            }
+            value += text[i++];
+          }
+          tokens.push(value);
+          continue;
+        }
+        let value = "";
+        while (i < text.length && !/\\s|\\(|\\)/.test(text[i])) value += text[i++];
+        tokens.push(value);
+      }
+      return tokens.filter(Boolean);
+    }
+
+    function isOrToken(token) {
+      const t = String(token || "").toUpperCase();
+      return t === "OR" || t === "||" || t === "|";
+    }
+
+    function isAndToken(token) {
+      const t = String(token || "").toUpperCase();
+      return t === "AND" || t === "&&" || t === "&";
+    }
+
+    function isNotToken(token) {
+      const t = String(token || "").toUpperCase();
+      return t === "NOT" || t === "!" || t === "-";
+    }
+
+    function compileBooleanFilter(text) {
+      const source = String(text || "").trim();
+      if (!source) return { test: () => true, empty: true };
+      const tokens = tokenizeBooleanFilter(source);
+      let pos = 0;
+
+      function peek() {
+        return tokens[pos];
+      }
+
+      function take() {
+        return tokens[pos++];
+      }
+
+      function parseOr() {
+        let node = parseAnd();
+        while (pos < tokens.length && isOrToken(peek())) {
+          take();
+          node = { type: "or", left: node, right: parseAnd() };
+        }
+        return node;
+      }
+
+      function parseAnd() {
+        let node = parseNot();
+        while (pos < tokens.length && peek() !== ")" && !isOrToken(peek())) {
+          if (isAndToken(peek())) take();
+          node = { type: "and", left: node, right: parseNot() };
+        }
+        return node;
+      }
+
+      function parseNot() {
+        if (isNotToken(peek())) {
+          take();
+          return { type: "not", node: parseNot() };
+        }
+        return parsePrimary();
+      }
+
+      function parsePrimary() {
+        const token = take();
+        if (token === undefined) throw new Error("表达式不完整");
+        if (token === "(") {
+          const node = parseOr();
+          if (take() !== ")") throw new Error("缺少右括号");
+          return node;
+        }
+        if (token === ")" || isAndToken(token) || isOrToken(token)) throw new Error("运算符位置不正确");
+        return { type: "term", value: token };
+      }
+
+      try {
+        const ast = parseOr();
+        if (pos < tokens.length) throw new Error("无法解析 “" + tokens[pos] + "”");
+        return { test: (m) => evaluateBooleanNode(ast, m), empty: false };
+      } catch (err) {
+        return { test: () => true, empty: false, error: err.message || "表达式格式不正确" };
+      }
+    }
+
+    function fieldValueForBoolean(m, field) {
+      const key = String(field || "").toLowerCase();
+      if (key === "tag" || key === "tags") return allTagsFor(m).join(" ");
+      if (key === "name" || key === "material") return m.name;
+      if (key === "library" || key === "lib" || key === "库") return m.library;
+      if (key === "family" || key === "族") return m.family;
+      if (key === "prefix" || key === "前缀") return m.prefix;
+      if (key === "suffix" || key === "后缀") return [m.suffix, m.suffixText].filter(Boolean).join(" ");
+      if (key === "class" || key === "type" || key === "类别") return m.class;
+      if (key === "nd") return fmt(m.nd, 6);
+      if (key === "vd") return fmt(m.vd, 3);
+      if (key === "dpgf") return fmt(m.dpgf, 4);
+      if (key === "density" || key === "密度") return fmt(m.density, 3);
+      return "";
+    }
+
+    function booleanTermMatches(m, rawTerm) {
+      const term = String(rawTerm || "").trim();
+      if (!term) return true;
+      const fieldMatch = term.match(/^([A-Za-z\\u4e00-\\u9fa5]+):(.*)$/);
+      if (fieldMatch) {
+        const fieldValue = fieldValueForBoolean(m, fieldMatch[1]).toLowerCase();
+        return fieldValue.includes(fieldMatch[2].trim().toLowerCase());
+      }
+      const haystack = [
+        m.name,
+        m.library,
+        m.family,
+        m.prefix,
+        m.suffix,
+        m.suffixText,
+        m.class,
+        ...allTagsFor(m)
+      ].filter(Boolean).join(" ").toLowerCase();
+      return haystack.includes(term.toLowerCase());
+    }
+
+    function evaluateBooleanNode(node, m) {
+      if (!node) return true;
+      if (node.type === "term") return booleanTermMatches(m, node.value);
+      if (node.type === "not") return !evaluateBooleanNode(node.node, m);
+      if (node.type === "and") return evaluateBooleanNode(node.left, m) && evaluateBooleanNode(node.right, m);
+      if (node.type === "or") return evaluateBooleanNode(node.left, m) || evaluateBooleanNode(node.right, m);
+      return true;
+    }
+
+    function tagSelectionMatches(m, selectedTags, logic) {
+      if (!selectedTags.size) return true;
+      const tags = new Set(allTagsFor(m));
+      if (logic === "and") {
+        for (const tag of selectedTags) if (!tags.has(tag)) return false;
+        return true;
+      }
+      for (const tag of selectedTags) if (tags.has(tag)) return true;
+      return false;
+    }
+
+    function updateBooleanFilterHint(compiled) {
+      if (!els.booleanFilterHint) return;
+      if (compiled.error) {
+        els.booleanFilterHint.textContent = "布尔筛选未生效：" + compiled.error;
+        els.booleanFilterHint.style.color = "#b3263b";
+      } else if (!compiled.empty) {
+        els.booleanFilterHint.textContent = "布尔筛选已生效。支持 AND / OR / NOT、括号、引号；字段可用 tag/name/library/family/prefix/suffix/class。";
+        els.booleanFilterHint.style.color = "#0f766e";
+      } else {
+        els.booleanFilterHint.textContent = "布尔筛选支持 AND / OR / NOT、括号、引号；可写 tag:高透、library:CDGM、family:K、prefix:H、suffix:GT。";
+        els.booleanFilterHint.style.color = "";
+      }
+    }
+
     function numberValue(id) {
       if (els[id].value.trim() === "") return null;
       const v = Number(els[id].value);
@@ -840,10 +1050,14 @@ const html = `<!doctype html>
     }
 
     function currentFilters() {
+      const booleanFilter = compileBooleanFilter(els.booleanFilter.value);
+      updateBooleanFilterHint(booleanFilter);
       return {
         libs: selectedCheckboxValues(els.libraryFilters),
         families: selectedCheckboxValues(els.familyFilters),
         tags: selectedCheckboxValues(els.tagFilters),
+        tagLogic: els.tagLogic.value,
+        booleanFilter,
         showInfrared: els.showInfrared.checked,
         ndMin: numberValue("ndMin"),
         ndMax: numberValue("ndMax"),
@@ -872,8 +1086,8 @@ const html = `<!doctype html>
         if (!inRange(m.vd, f.vdMin, f.vdMax)) return false;
         if (!inRange(m.dpgf, f.dpgfMin, f.dpgfMax)) return false;
         if (!inRange(m.density, f.densityMin, f.densityMax)) return false;
-        const tags = new Set(allTagsFor(m));
-        for (const tag of f.tags) if (!tags.has(tag)) return false;
+        if (!tagSelectionMatches(m, f.tags, f.tagLogic)) return false;
+        if (!f.booleanFilter.test(m)) return false;
         return true;
       });
     }
@@ -1303,13 +1517,14 @@ const html = `<!doctype html>
         els.libraryFilters.querySelectorAll("input").forEach((x) => x.checked = true);
         els.familyFilters.querySelectorAll("input").forEach((x) => x.checked = false);
         els.tagFilters.querySelectorAll("input").forEach((x) => x.checked = false);
-        for (const id of ["ndMin","ndMax","vdMin","vdMax","dpgfMin","dpgfMax","densityMin","densityMax","tagSearch"]) els[id].value = "";
+        for (const id of ["ndMin","ndMax","vdMin","vdMax","dpgfMin","dpgfMax","densityMin","densityMax","tagSearch","booleanFilter"]) els[id].value = "";
+        els.tagLogic.value = "or";
         els.showInfrared.checked = false;
         renderTagFilters(false);
         state.suppressFit = false;
         refresh();
       });
-      for (const id of ["showInfrared","ndMin","ndMax","vdMin","vdMax","dpgfMin","dpgfMax","densityMin","densityMax","sliceVd","sliceNd"]) {
+      for (const id of ["showInfrared","tagLogic","booleanFilter","ndMin","ndMax","vdMin","vdMax","dpgfMin","dpgfMax","densityMin","densityMax","sliceVd","sliceNd"]) {
         els[id].addEventListener("input", () => {
           if (id !== "sliceVd" && id !== "sliceNd") state.suppressFit = false;
           refresh();
