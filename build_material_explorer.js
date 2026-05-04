@@ -409,6 +409,24 @@ const html = `<!doctype html>
       margin-bottom: 8px;
     }
     .material-title strong { font-size: 20px; color: var(--blue); line-height: 1.2; overflow-wrap: anywhere; }
+    .name-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+    button.copy-name {
+      min-height: 28px;
+      padding: 3px 8px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    button.copy-name.mini {
+      min-height: 24px;
+      padding: 2px 6px;
+      margin-left: 5px;
+    }
     .badge {
       display: inline-flex;
       align-items: center;
@@ -506,6 +524,44 @@ const html = `<!doctype html>
       margin-top: 8px;
     }
     .boolean-filter input { width: 100%; }
+    .boolean-builder {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfdff;
+      padding: 8px;
+    }
+    .boolean-builder-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 7px;
+      margin-bottom: 7px;
+      flex-wrap: wrap;
+    }
+    .boolean-rule-list {
+      display: grid;
+      gap: 7px;
+    }
+    .boolean-rule {
+      display: grid;
+      grid-template-columns: minmax(58px, 0.85fr) minmax(82px, 1fr);
+      gap: 6px;
+      align-items: center;
+      padding: 7px;
+      border: 1px solid #dce6ed;
+      border-radius: 7px;
+      background: white;
+    }
+    .boolean-rule .builder-value,
+    .boolean-rule .delete-boolean-rule { grid-column: 1 / -1; }
+    .boolean-rule select,
+    .boolean-rule input { width: 100%; height: 32px; }
+    .boolean-rule button { min-height: 32px; padding: 4px 8px; }
+    .boolean-rule .join-placeholder {
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
     .empty {
       color: var(--muted);
       padding: 12px;
@@ -528,6 +584,7 @@ const html = `<!doctype html>
       header { padding-left: 18px; padding-right: 18px; }
       .search-row { grid-template-columns: 1fr; }
       .split { grid-template-columns: 1fr; }
+      .boolean-rule { grid-template-columns: 1fr; }
       .range-grid { grid-template-columns: 1fr 1fr; }
       .range-grid label { grid-column: 1 / -1; }
     }
@@ -597,7 +654,18 @@ const html = `<!doctype html>
           </div>
           <div id="tagFilters" class="checkbox-grid"></div>
           <div class="boolean-filter">
+            <div class="boolean-builder">
+              <div class="boolean-builder-head">
+                <span class="hint">模块化布尔筛选</span>
+                <div class="row tight">
+                  <button id="addBooleanRule">添加条件</button>
+                  <button id="clearBooleanRules">清空条件</button>
+                </div>
+              </div>
+              <div id="booleanRuleList" class="boolean-rule-list"></div>
+            </div>
             <input id="booleanFilter" placeholder='布尔筛选，例如 高透 AND (低色散 OR "后缀:GT") AND NOT 红外'>
+            <datalist id="booleanValueOptions"></datalist>
             <div id="booleanFilterHint" class="hint">布尔筛选支持 AND / OR / NOT、括号、引号；可写 tag:高透、library:CDGM、family:K、prefix:H、suffix:GT。</div>
           </div>
         </div>
@@ -672,7 +740,7 @@ const html = `<!doctype html>
           <h3 style="font-size:15px; margin:14px 0 8px;">综合相近候选</h3>
           <div class="table-wrap" style="max-height:315px;">
             <table>
-              <thead><tr><th>材料</th><th>库</th><th>距离</th><th>ΔNd</th><th>ΔVd</th><th>标签</th></tr></thead>
+              <thead><tr><th>材料</th><th>库</th><th>距离</th><th>ΔNd</th><th>ΔVd</th><th>标签</th><th>复制</th></tr></thead>
               <tbody id="similarTable"></tbody>
             </table>
           </div>
@@ -711,6 +779,7 @@ const html = `<!doctype html>
       hoverId: null,
       similar: [],
       customRules: [],
+      booleanRules: [],
       view: null,
       isPanning: false,
       panStart: null,
@@ -723,6 +792,44 @@ const html = `<!doctype html>
     function fmt(n, digits) {
       if (!Number.isFinite(n)) return "";
       return Number(n).toFixed(digits).replace(/\\.0+$/, "").replace(/(\\.\\d*?)0+$/, "$1");
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[ch]));
+    }
+
+    function copyText(text, button) {
+      const value = String(text || "");
+      const done = () => {
+        if (!button) return;
+        const old = button.textContent;
+        button.textContent = "已复制";
+        setTimeout(() => { button.textContent = old; }, 1100);
+      };
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(value).then(done).catch(() => fallbackCopy(value, done));
+      } else {
+        fallbackCopy(value, done);
+      }
+    }
+
+    function fallbackCopy(text, done) {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); } catch {}
+      document.body.removeChild(ta);
+      done();
     }
 
     function hashOffset(text, range) {
@@ -799,7 +906,7 @@ const html = `<!doctype html>
       for (const id of [
         "searchInput","searchButton","materialNames","clearSelection","resetFilters","totalCount","visibleCount","neighborCount",
         "libraryFilters","showInfrared","ndMin","ndMax","vdMin","vdMax","dpgfMin","dpgfMax","densityMin","densityMax",
-        "familyFilters","tagSearch","tagLogic","tagFilters","booleanFilter","booleanFilterHint","customTagName","customTagMode","customTagPattern","addCustomTag",
+        "familyFilters","tagSearch","tagLogic","tagFilters","addBooleanRule","clearBooleanRules","booleanRuleList","booleanFilter","booleanValueOptions","booleanFilterHint","customTagName","customTagMode","customTagPattern","addCustomTag",
         "exportTags","importTags","clearTags","customTagJson","customRuleList","mainPlot","fitPlot","zoomSlice",
         "materialTable","tableHint","downloadFiltered","selectedDetails","similarTable","sliceVd","sliceNd","slicePlot",
         "sliceHint","tooltip"
@@ -850,6 +957,111 @@ const html = `<!doctype html>
         if (q && !tag.toLowerCase().includes(q)) continue;
         makeCheckbox(els.tagFilters, tag, tag + " (" + count + ")", selected.has(tag), "checkline");
       }
+    }
+
+    const BOOLEAN_FIELDS = [
+      ["any", "任意"],
+      ["tag", "Tag"],
+      ["name", "材料名"],
+      ["library", "材料库"],
+      ["family", "材料族"],
+      ["prefix", "前缀"],
+      ["suffix", "后缀"],
+      ["class", "类别"]
+    ];
+
+    const BOOLEAN_MODES = [
+      ["contains", "包含"],
+      ["equals", "等于"],
+      ["notContains", "不包含"],
+      ["notEquals", "不等于"]
+    ];
+
+    function fieldOptionsHtml(selected) {
+      return BOOLEAN_FIELDS.map(([value, label]) =>
+        '<option value="' + value + '"' + (value === selected ? " selected" : "") + '>' + label + '</option>'
+      ).join("");
+    }
+
+    function modeOptionsHtml(selected) {
+      return BOOLEAN_MODES.map(([value, label]) =>
+        '<option value="' + value + '"' + (value === selected ? " selected" : "") + '>' + label + '</option>'
+      ).join("");
+    }
+
+    function renderBooleanValueOptions() {
+      const values = new Set();
+      for (const m of MATERIAL_DATA) {
+        [m.name, m.library, m.family, m.prefix, m.suffix, m.class].filter(Boolean).forEach((x) => values.add(x));
+        for (const tag of allTagsFor(m)) values.add(tag);
+      }
+      els.booleanValueOptions.innerHTML = Array.from(values)
+        .sort((a, b) => a.localeCompare(b, "zh-Hans-CN"))
+        .slice(0, 1600)
+        .map((value) => '<option value="' + escapeHtml(value) + '"></option>')
+        .join("");
+    }
+
+    function renderBooleanRules() {
+      if (!state.booleanRules.length) {
+        els.booleanRuleList.innerHTML = '<div class="hint">点击“添加条件”，用下拉模块组合筛选规则。</div>';
+        return;
+      }
+      els.booleanRuleList.innerHTML = state.booleanRules.map((rule, i) => {
+        const join = rule.join || "AND";
+        const joinControl = i === 0
+          ? '<div class="join-placeholder">WHERE</div>'
+          : '<select class="builder-join" data-i="' + i + '"><option value="AND"' + (join === "AND" ? " selected" : "") + '>AND</option><option value="OR"' + (join === "OR" ? " selected" : "") + '>OR</option></select>';
+        return '<div class="boolean-rule" data-i="' + i + '">' +
+          joinControl +
+          '<select class="builder-field" data-i="' + i + '">' + fieldOptionsHtml(rule.field || "tag") + '</select>' +
+          '<select class="builder-mode" data-i="' + i + '">' + modeOptionsHtml(rule.mode || "contains") + '</select>' +
+          '<input class="builder-value" data-i="' + i + '" list="booleanValueOptions" placeholder="选择或输入值" value="' + escapeHtml(rule.value || "") + '">' +
+          '<button class="delete-boolean-rule" data-i="' + i + '">删除</button>' +
+          '</div>';
+      }).join("");
+    }
+
+    function quoteBooleanTerm(term) {
+      const value = String(term || "").replace(/"/g, '\\"');
+      return /\\s|\\(|\\)/.test(value) ? '"' + value + '"' : value;
+    }
+
+    function booleanRuleToTerm(rule) {
+      const value = String(rule.value || "").trim();
+      if (!value) return "";
+      const field = rule.field || "tag";
+      const symbol = rule.mode === "equals" || rule.mode === "notEquals" ? "=" : ":";
+      const raw = field === "any" ? value : field + symbol + value;
+      const term = quoteBooleanTerm(raw);
+      return rule.mode === "notContains" || rule.mode === "notEquals" ? "NOT " + term : term;
+    }
+
+    function expressionFromBooleanRules() {
+      const parts = [];
+      for (const rule of state.booleanRules) {
+        const term = booleanRuleToTerm(rule);
+        if (!term) continue;
+        parts.push({ join: rule.join || "AND", term });
+      }
+      return parts.map((part, i) => i === 0 ? part.term : part.join + " " + part.term).join(" ");
+    }
+
+    function updateBooleanRuleFromControl(control) {
+      const i = Number(control.dataset.i);
+      const rule = state.booleanRules[i];
+      if (!rule) return;
+      const row = control.closest(".boolean-rule");
+      rule.join = i === 0 ? "AND" : (row.querySelector(".builder-join")?.value || "AND");
+      rule.field = row.querySelector(".builder-field").value;
+      rule.mode = row.querySelector(".builder-mode").value;
+      rule.value = row.querySelector(".builder-value").value;
+    }
+
+    function syncBooleanExpressionFromRules() {
+      els.booleanFilter.value = expressionFromBooleanRules();
+      state.suppressFit = false;
+      refresh();
     }
 
     function selectedCheckboxValues(container) {
@@ -988,13 +1200,31 @@ const html = `<!doctype html>
       return "";
     }
 
+    function fieldExactValuesForBoolean(m, field) {
+      const key = String(field || "").toLowerCase();
+      if (key === "tag" || key === "tags") return allTagsFor(m);
+      if (key === "name" || key === "material") return [m.name];
+      if (key === "library" || key === "lib" || key === "库") return [m.library];
+      if (key === "family" || key === "族") return [m.family];
+      if (key === "prefix" || key === "前缀") return [m.prefix];
+      if (key === "suffix" || key === "后缀") return [m.suffix, m.suffixText];
+      if (key === "class" || key === "type" || key === "类别") return [m.class];
+      return [fieldValueForBoolean(m, field)];
+    }
+
     function booleanTermMatches(m, rawTerm) {
       const term = String(rawTerm || "").trim();
       if (!term) return true;
-      const fieldMatch = term.match(/^([A-Za-z\\u4e00-\\u9fa5]+):(.*)$/);
+      const fieldMatch = term.match(/^([A-Za-z\\u4e00-\\u9fa5]+)([:=])(.*)$/);
       if (fieldMatch) {
-        const fieldValue = fieldValueForBoolean(m, fieldMatch[1]).toLowerCase();
-        return fieldValue.includes(fieldMatch[2].trim().toLowerCase());
+        const field = fieldMatch[1];
+        const symbol = fieldMatch[2];
+        const needle = fieldMatch[3].trim().toLowerCase();
+        if (symbol === "=") {
+          return fieldExactValuesForBoolean(m, field).filter(Boolean).some((value) => String(value).toLowerCase() === needle);
+        }
+        const fieldValue = fieldValueForBoolean(m, field).toLowerCase();
+        return fieldValue.includes(needle);
       }
       const haystack = [
         m.name,
@@ -1413,6 +1643,15 @@ const html = `<!doctype html>
         || MATERIAL_DATA.find((m) => m.name.toLowerCase().includes(term));
     }
 
+    function attachCopyButtons(root) {
+      root.querySelectorAll("[data-copy-name]").forEach((button) => {
+        button.addEventListener("click", (e) => {
+          e.stopPropagation();
+          copyText(button.dataset.copyName, button);
+        });
+      });
+    }
+
     function renderDetails() {
       const m = byId(state.selectedId);
       if (!m) {
@@ -1421,10 +1660,10 @@ const html = `<!doctype html>
         return;
       }
       els.selectedDetails.className = "";
-      const tags = allTagsFor(m).slice(0, 12).map((t) => '<span class="badge">' + t + '</span>').join("");
+      const tags = allTagsFor(m).slice(0, 12).map((t) => '<span class="badge">' + escapeHtml(t) + '</span>').join("");
       const cls = m.class === "glass" ? "green" : m.class === "plastic" ? "amber" : "red";
       els.selectedDetails.innerHTML =
-        '<div class="material-title"><strong>' + m.name + '</strong><span class="badge ' + cls + '">' + m.library + ' · ' + m.class + '</span></div>' +
+        '<div class="material-title"><strong>' + escapeHtml(m.name) + '</strong><div class="name-actions"><button class="copy-name" data-copy-name="' + escapeHtml(m.name) + '">复制名称</button><span class="badge ' + cls + '">' + escapeHtml(m.library) + ' · ' + escapeHtml(m.class) + '</span></div></div>' +
         '<div class="detail-grid">' +
         '<div><span>Nd</span>' + fmt(m.nd, 6) + '</div>' +
         '<div><span>Vd</span>' + fmt(m.vd, 4) + '</div>' +
@@ -1432,27 +1671,30 @@ const html = `<!doctype html>
         '<div><span>密度</span>' + fmt(m.density, 4) + '</div>' +
         '<div><span>成本/库字段</span>' + fmt(m.cost, 3) + '</div>' +
         '<div><span>波段</span>' + fmt(m.waveMin, 4) + ' - ' + fmt(m.waveMax, 4) + '</div>' +
-        '<div><span>前缀/族/后缀</span>' + (m.prefix || "无") + ' / ' + (m.family || "未知") + ' / ' + (m.suffixText || "无") + '</div>' +
-        '<div><span>公式</span>' + (m.formula || "未知") + '</div>' +
+        '<div><span>前缀/族/后缀</span>' + escapeHtml(m.prefix || "无") + ' / ' + escapeHtml(m.family || "未知") + ' / ' + escapeHtml(m.suffixText || "无") + '</div>' +
+        '<div><span>公式</span>' + escapeHtml(m.formula || "未知") + '</div>' +
         '</div>' +
         '<div class="tag-list">' + tags + '</div>';
+      attachCopyButtons(els.selectedDetails);
     }
 
     function renderSimilarTable() {
       els.neighborCount.textContent = state.similar.length;
       if (!state.similar.length) {
-        els.similarTable.innerHTML = '<tr><td colspan="6" class="hint">暂无候选</td></tr>';
+        els.similarTable.innerHTML = '<tr><td colspan="7" class="hint">暂无候选</td></tr>';
         return;
       }
       els.similarTable.innerHTML = state.similar.map((x) => {
         const tag = x.nameLike ? "近名" : x.otherLibrary ? "跨库" : "近邻";
         return '<tr class="clickable" data-id="' + x.m.id + '">' +
-          '<td>' + x.m.name + '</td><td>' + x.m.library + '</td><td>' + fmt(x.score, 3) + '</td>' +
-          '<td>' + fmt(x.dNd, 6) + '</td><td>' + fmt(x.dVd, 3) + '</td><td><span class="badge">' + tag + '</span></td></tr>';
+          '<td>' + escapeHtml(x.m.name) + '</td><td>' + escapeHtml(x.m.library) + '</td><td>' + fmt(x.score, 3) + '</td>' +
+          '<td>' + fmt(x.dNd, 6) + '</td><td>' + fmt(x.dVd, 3) + '</td><td><span class="badge">' + tag + '</span></td>' +
+          '<td><button class="copy-name mini" data-copy-name="' + escapeHtml(x.m.name) + '">复制</button></td></tr>';
       }).join("");
       els.similarTable.querySelectorAll("tr[data-id]").forEach((tr) => {
         tr.addEventListener("click", () => selectMaterial(Number(tr.dataset.id), true));
       });
+      attachCopyButtons(els.similarTable);
     }
 
     function renderTable(points) {
@@ -1519,6 +1761,8 @@ const html = `<!doctype html>
         els.tagFilters.querySelectorAll("input").forEach((x) => x.checked = false);
         for (const id of ["ndMin","ndMax","vdMin","vdMax","dpgfMin","dpgfMax","densityMin","densityMax","tagSearch","booleanFilter"]) els[id].value = "";
         els.tagLogic.value = "or";
+        state.booleanRules = [];
+        renderBooleanRules();
         els.showInfrared.checked = false;
         renderTagFilters(false);
         state.suppressFit = false;
@@ -1531,6 +1775,31 @@ const html = `<!doctype html>
         });
       }
       els.tagSearch.addEventListener("input", () => renderTagFilters(true));
+      els.addBooleanRule.addEventListener("click", () => {
+        state.booleanRules.push({ join: "AND", field: "tag", mode: "contains", value: "" });
+        renderBooleanRules();
+      });
+      els.clearBooleanRules.addEventListener("click", () => {
+        state.booleanRules = [];
+        renderBooleanRules();
+        syncBooleanExpressionFromRules();
+      });
+      els.booleanRuleList.addEventListener("input", (e) => {
+        if (!e.target.matches(".builder-value")) return;
+        updateBooleanRuleFromControl(e.target);
+        syncBooleanExpressionFromRules();
+      });
+      els.booleanRuleList.addEventListener("change", (e) => {
+        if (!e.target.matches(".builder-join,.builder-field,.builder-mode,.builder-value")) return;
+        updateBooleanRuleFromControl(e.target);
+        syncBooleanExpressionFromRules();
+      });
+      els.booleanRuleList.addEventListener("click", (e) => {
+        if (!e.target.matches(".delete-boolean-rule")) return;
+        state.booleanRules.splice(Number(e.target.dataset.i), 1);
+        renderBooleanRules();
+        syncBooleanExpressionFromRules();
+      });
       els.fitPlot.addEventListener("click", () => {
         state.suppressFit = false;
         refresh();
@@ -1554,6 +1823,7 @@ const html = `<!doctype html>
         els.customTagName.value = "";
         els.customTagPattern.value = "";
         renderCustomRules();
+        renderBooleanValueOptions();
         renderTagFilters(true);
         refresh();
       });
@@ -1567,6 +1837,7 @@ const html = `<!doctype html>
           state.customRules = parsed;
           saveCustomRules();
           renderCustomRules();
+          renderBooleanValueOptions();
           renderTagFilters(true);
           refresh();
         } catch {
@@ -1578,6 +1849,7 @@ const html = `<!doctype html>
         state.customRules = [];
         saveCustomRules();
         renderCustomRules();
+        renderBooleanValueOptions();
         renderTagFilters(true);
         refresh();
       });
@@ -1660,6 +1932,8 @@ const html = `<!doctype html>
       state.customRules = loadCustomRules();
       renderStaticFilters();
       renderTagFilters(false);
+      renderBooleanValueOptions();
+      renderBooleanRules();
       renderCustomRules();
       attachEvents();
       refresh();
